@@ -9,7 +9,7 @@
 (load "miniKanren-with-symbolic-constraints/numbers.scm")
 ;;match.ss for dual rule generator
 (load "match.ss")
-
+n
 (define (any-statement s)
   (conde
    [(simple-statement s)]
@@ -60,7 +60,7 @@
     (define-top-level-value (rule-source-name (sym-dual-rule-name n))
       sym-dual-rule-source)
     (define-top-level-value (sym-dual-rule-name n) (eval sym-dual-rule-source))
-))
+    ))
 
 (define (build-rule-value l r) 
   (let* ([var-list (extract-vars (list l r))]
@@ -242,10 +242,43 @@
            (== `(,res . ,acc) o)
            (mapo rel d acc)]
           )))
-           
 
 (define (thunko i o)
   (== (lambda () i) o))
+
+;;build-prover
+;;generate miniKanren sl prover with a given corpus of rules
+;;example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
+#|(define (build-prover rls)
+  (for-each (lambda (a) (build-named-rule (car a) (cadr a) (caddr a))) rls)
+  (let ([root-names (map car rls)]
+        [rule-names (list-flatten
+                     (map (lambda (a) (list a 
+                                            (sym-rule-name a) 
+                                            (dual-rule-name a) 
+                                            (sym-dual-rule-name a))) 
+                          root-names))]
+        [rules (map 
+                (lambda (a) 
+                  (list 
+                   (list a 'i 'x) 
+                   (list '== 'quasiquote 
+                         (cons (list 'unquote 'x a) . 'unquote 'y) 't) 
+                   (list 'prover-name 'x 'y 'o))) 
+                rule-names)])
+    (list 'lambda '(i t o) 
+          (list 'fresh var-list
+                (list 'conde
+                      rules
+  |#
+
+;a fold is in order
+(define (build-exp-as-list exp)
+  (let ([exp->ls (lambda (e acc)
+                   (cond
+                    [(null? e) acc]
+                    [(]
+                    
 
 #|
 ;rule r does not need to be passed quoted. (sym dneg 'x q) => (~ (~ x))
