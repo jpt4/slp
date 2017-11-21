@@ -9,7 +9,7 @@
 (load "miniKanren-with-symbolic-constraints/numbers.scm")
 ;;match.ss for dual rule generator
 (load "match.ss")
-n
+
 (define (any-statement s)
   (conde
    [(simple-statement s)]
