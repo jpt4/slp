@@ -274,10 +274,11 @@ n
 
 ;a fold is in order
 (define (build-exp-as-list exp)
-  (let ([exp->ls (lambda (e acc)
-                   (cond
-                    [(null? e) acc]
-                    [(]
+  '())
+(define (exp->ls e acc)
+  (cond
+   [(null? e) acc]
+   [(eq? (car e) quote) (exp->ls (cdr e) (cons `(list 'quote ,(car e)) acc))]))
                     
 
 #|
