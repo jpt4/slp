@@ -191,7 +191,7 @@
           ;simple statement grounding
           [(simple-statement i) (== `((,i simp)) t) (== i o)]
           ;eight equivalence rules - contraction
-          [(dneg i x) (== `((,x dneg) . ,y) t) 
+          [(dneg i x) (== `((,x dneg) . ,y) t)
            #;(rule-result-cycle-check x t) (eqvo x y o)]
           [(idem i x) (== `((,x idem) . ,y) t) (eqvo x y o)]
           [(comm i x) (== `((,x comm) . ,y) t) (eqvo x y o)]
@@ -269,8 +269,45 @@
     (list 'lambda '(i t o) 
           (list 'fresh var-list
                 (list 'conde
-                      rules
-  |#
+                      rules)))))
+|#
+
+(define (prover-t prover-name rule-name-ls)
+  (let* ([pn prover-name]
+	[rule-clauses 
+	 (map (lambda (a) 
+		(list (list a 'i 'x) 
+		      (list '== (list 'quasiquote (cons (list (list 'unquote 'x) a) 
+							(list 'unquote 'y))) 't)
+		      `(,pn i o)))
+	      rule-name-ls)])
+    `(lambda (i t o)
+       (fresh (x y new-exp res-sub-t sub-t sub-o
+		 s1 s2 res-sub-t-1 res-sub-t-2 sub-t-1 sub-t-2 sub-o-1 sub-o-2)
+	      ,(append (list 'conde)
+		       '([(== i o) (== '() t)])
+		       '([(simple-statement i) (== `((,i simp)) t) (== i o)])
+		       rule-clauses
+		       '([(mk-and s1 s2 i) 
+			  (== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
+			  (== `((,s2 and-comp-2) . ,res-sub-t-2) sub-t-2)            
+			  (,pn s1 res-sub-t-1 sub-o-1)
+			  (,pn s2 res-sub-t-2 sub-o-2)
+			  (== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
+			  (== `(& ,sub-o-1 ,sub-o-2) new-exp)
+			  (,pn new-exp y o)])
+		       '([(mk-or s1 s2 i) 
+			  (== `((,s1 or-comp-1) . ,res-sub-t-1) sub-t-1) 
+			  (== `((,s2 or-comp-2) . ,res-sub-t-2) sub-t-2)            
+			  (,pn s1 res-sub-t-1 sub-o-1)
+			  (,pn s2 res-sub-t-2 sub-o-2)
+			  (== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
+			  (== `(// ,sub-o-1 ,sub-o-2) new-exp)
+			  (,pn new-exp y o)]))))))
+
+
+(define (gav-quote a)
+  (lambda () (list 'quasiquote a)))
 
 ;a fold is in order
 (define (build-exp-as-list exp)
@@ -280,7 +317,6 @@
    [(null? e) acc]
    [(eq? (car e) 'quote) (exp->ls (cdr e) (cons `(list 'quote ,(car e)) acc))]))
                     
-
 #|
 ;rule r does not need to be passed quoted. (sym dneg 'x q) => (~ (~ x))
 (define (sym r i o) 
@@ -342,3 +378,13 @@
             (replace-sym-w-var-syntax (cdr exp))))]))
 |#
 
+#|
+notes and lessons
+> (list (quote quasiquote) 'a)
+`a
+> (list 'quasiquote 'a)
+`a
+
+' =/= quote
+' = (quote <the-operand>)
+|#
