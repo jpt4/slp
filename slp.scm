@@ -159,7 +159,7 @@
   (string->symbol (string-append "sym-" (symbol->string (dual-rule-name n)))))
 
 ;; Eight Assumed Equivalence Rules, Symmetries, Duals, and Symmetric Duals
-
+#|
 ;Double Negation
 (build-named-rule 'dneg '(~ (~ x)) 'x)
 ;Idempotency
@@ -176,12 +176,90 @@
 (build-named-rule 'dem '(~ (& x y)) '(// (~ x) (~ y)))
 ;Dichotomy
 (build-named-rule 'dichot '(// x (~ x)) '(// y (~ y)))
+|#
+
+(define base-rule-defs
+  '((dneg (~ (~ x)) x)
+    (idem (& x x) x)
+    (comm (& x y) (& y x))
+    (assoc (& x (& y z)) (& (& x y) z))
+    (absorp (& x (// x y)) x)
+    (distr (& x (// y z)) (// (& x y) (& x z)))
+    (dem (~ (& x y)) (// (~ x) (~ y)))
+    (dichot (// x (~ x)) (// y (~ y)))))
+
+;; example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
+(define (build-rule-corpus name-redex-pair-ls)
+  (map (lambda (a) (let* ([name (car a)]
+			  [lhs (cadr a)]
+			  [rhs (caddr a)])
+		     (build-named-rule name lhs rhs)
+		     name))
+       name-redex-pair-ls))
+
+(define base-rule-ls
+  (build-rule-corpus base-rule-defs))
+
+;; build-prover
+;; generate miniKanren sl prover with a given corpus of rules
+(define (build-named-prover prover-name rule-name-ls)
+  (let* ([pn prover-name]
+	 [rule-clauses 
+	  (map (lambda (a) 
+		 (list (list a 'i 'x) 
+		       (list '== (list 'quasiquote (cons (list (list 'unquote 'x) a) 
+							 (list 'unquote 'y))) 't)
+		       `(,pn i o)))
+	       rule-name-ls)]
+	 [prover-source
+	  `(lambda (i t o)
+	     (fresh (x y new-exp res-sub-t sub-t sub-o
+		       s1 s2 res-sub-t-1 res-sub-t-2 sub-t-1 sub-t-2 sub-o-1 sub-o-2)
+		    ,(append (list 'conde)
+			     '([(== i o) (== '() t)])
+			     '([(simple-statement i) (== `((,i simp)) t) (== i o)])
+			     rule-clauses
+			     `([(mk-and s1 s2 i)
+				(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
+				(== `((,s2 and-comp-2) . ,res-sub-t-2) sub-t-2)            
+				(,pn s1 res-sub-t-1 sub-o-1)
+				(,pn s2 res-sub-t-2 sub-o-2)
+				(== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
+				(== `(& ,sub-o-1 ,sub-o-2) new-exp)
+				(,pn new-exp y o)])
+			     `([(mk-or s1 s2 i) 
+				(== `((,s1 or-comp-1) . ,res-sub-t-1) sub-t-1) 
+				(== `((,s2 or-comp-2) . ,res-sub-t-2) sub-t-2)            
+				(,pn s1 res-sub-t-1 sub-o-1)
+				(,pn s2 res-sub-t-2 sub-o-2)
+				(== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
+				(== `(// ,sub-o-1 ,sub-o-2) new-exp)
+				(,pn new-exp y o)]))))])
+    (define-top-level-value (rule-source-name pn) prover-source)
+    (define-top-level-value pn (eval prover-source))))
+
+;; base-provero
+(build-named-prover 'base-provero base-rule-ls)
 
 ;; Syntactically mark statements as equivalent.
 (define (mk-eqv i o)
   (conde
    [(eqvo i o) `(eqv i o)]))
 
+;; miniKanren auxiliaries
+(define (mapo rel ls o)
+  (fresh (a d res acc)
+         (conde
+          [(== '() ls) (== '() o)]
+          [(== `(,a . ,d) ls) (rel a res) 
+           (== `(,res . ,acc) o)
+           (mapo rel d acc)]
+          )))
+
+(define (thunko i o)
+  (== (lambda () i) o))
+
+#|
 (define (eqvo i t o)
   (fresh (x y new-exp res-sub-t sub-t sub-o
             s1 s2 res-sub-t-1 res-sub-t-2 sub-t-1 sub-t-2 sub-o-1 sub-o-2)
@@ -191,7 +269,7 @@
           ;simple statement grounding
           [(simple-statement i) (== `((,i simp)) t) (== i o)]
           ;eight equivalence rules - contraction
-          [(dneg i x) (== `((,x dneg) . ,y) t) 
+          [(dneg i x) (== `((,x dneg) . ,y) t)
            #;(rule-result-cycle-check x t) (eqvo x y o)]
           [(idem i x) (== `((,x idem) . ,y) t) (eqvo x y o)]
           [(comm i x) (== `((,x comm) . ,y) t) (eqvo x y o)]
@@ -232,45 +310,11 @@
            (== `(// ,sub-o-1 ,sub-o-2) new-exp)
            (eqvo new-exp y o)]
           )))
+|#
 
-;; miniKanren auxiliaries
-(define (mapo rel ls o)
-  (fresh (a d res acc)
-         (conde
-          [(== '() ls) (== '() o)]
-          [(== `(,a . ,d) ls) (rel a res) 
-           (== `(,res . ,acc) o)
-           (mapo rel d acc)]
-          )))
-
-(define (thunko i o)
-  (== (lambda () i) o))
-
-;;build-prover
-;;generate miniKanren sl prover with a given corpus of rules
-;;example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
-#|(define (build-prover rls)
-  (for-each (lambda (a) (build-named-rule (car a) (cadr a) (caddr a))) rls)
-  (let ([root-names (map car rls)]
-        [rule-names (list-flatten
-                     (map (lambda (a) (list a 
-                                            (sym-rule-name a) 
-                                            (dual-rule-name a) 
-                                            (sym-dual-rule-name a))) 
-                          root-names))]
-        [rules (map 
-                (lambda (a) 
-                  (list 
-                   (list a 'i 'x) 
-                   (list '== 'quasiquote 
-                         (cons (list 'unquote 'x a) . 'unquote 'y) 't) 
-                   (list 'prover-name 'x 'y 'o))) 
-                rule-names)])
-    (list 'lambda '(i t o) 
-          (list 'fresh var-list
-                (list 'conde
-                      rules
-  |#
+#|
+(define (gav-quote a)
+  (lambda () (list 'quasiquote a)))
 
 ;a fold is in order
 (define (build-exp-as-list exp)
@@ -279,8 +323,8 @@
   (cond
    [(null? e) acc]
    [(eq? (car e) 'quote) (exp->ls (cdr e) (cons `(list 'quote ,(car e)) acc))]))
-                    
-
+|#  
+                  
 #|
 ;rule r does not need to be passed quoted. (sym dneg 'x q) => (~ (~ x))
 (define (sym r i o) 
@@ -342,3 +386,41 @@
             (replace-sym-w-var-syntax (cdr exp))))]))
 |#
 
+#|
+notes and lessons
+> (list (quote quasiquote) 'a)
+`a
+> (list 'quasiquote 'a)
+`a
+
+' =/= quote
+' = (quote <the-operand>)
+
+true desire
+>'(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
+(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
+<however, I thought>
+>`(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
+Exception: variable s1 is not bound
+Type (debug) to enter the debugger.
+<similar to the result of>
+>(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1)
+Exception: variable s1 is not bound
+Type (debug) to enter the debugger.
+<except it doesn't>
+>`(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1)
+(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1)
+<regardless, the following tierce is also the case>
+> (equal? `,(list '== (list 'quasiquote (cons (list (list 'unquote 's1) 'and-comp-1) (list 'unquote 'res-sub-t-1))) 'sub-t-1) 
+	  `(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1))
+#t
+> (eq? `,(list '== (list 'quasiquote (cons (list (list 'unquote 's1) 'and-comp-1) (list 'unquote 'res-sub-t-1))) 'sub-t-1) 
+       `(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1))
+#f
+> (eqv? `,(list '== (list 'quasiquote (cons (list (list 'unquote 's1) 'and-comp-1) (list 'unquote 'res-sub-t-1))) 'sub-t-1) 
+	'(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1))
+#f
+<because (equal? '(a) (list 'a)) is #t.>
+
+
+|#
