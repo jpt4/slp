@@ -148,7 +148,7 @@
    [// '&]
    [else sym]))
 
-;naming auxiliaries
+;;naming auxiliaries
 (define (rule-source-name n)
   (string->symbol (string-append (symbol->string n) "-source")))
 (define (sym-rule-name n)
@@ -219,15 +219,15 @@
     (define-top-level-value (rule-source-name pn) prover-source)
     (define-top-level-value pn (eval prover-source))))
 
-;; base-provero
+;;base-provero
 (build-named-prover 'base-provero base-rule-ls)
 
-;; Syntactically mark statements as equivalent.
+;;Syntactically mark statements as equivalent.
 (define (mk-eqv i o)
   (conde
    [(eqvo i o) `(eqv i o)]))
 
-;; miniKanren auxiliaries
+;;miniKanren auxiliaries
 (define (mapo rel ls o)
   (fresh (a d res acc)
          (conde
