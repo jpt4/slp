@@ -158,26 +158,7 @@
 (define (sym-dual-rule-name n)
   (string->symbol (string-append "sym-" (symbol->string (dual-rule-name n)))))
 
-;; Eight Assumed Equivalence Rules, Symmetries, Duals, and Symmetric Duals
-#|
-;Double Negation
-(build-named-rule 'dneg '(~ (~ x)) 'x)
-;Idempotency
-(build-named-rule 'idem '(& x x) 'x)
-;Commutativity
-(build-named-rule 'comm '(& x y) '(& y x))
-;Associativity
-(build-named-rule 'assoc '(& x (& y z)) '(& (& x y) z))
-;Absorption
-(build-named-rule 'absorp '(& x (// x y)) 'x)
-;Distributivity
-(build-named-rule 'distr '(& x (// y z)) '(// (& x y) (& x z)))
-;DeMorgan's Rule
-(build-named-rule 'dem '(~ (& x y)) '(// (~ x) (~ y)))
-;Dichotomy
-(build-named-rule 'dichot '(// x (~ x)) '(// y (~ y)))
-|#
-
+;;Eight Assumed Equivalence Rules, Symmetries, Duals, and Symmetric Duals
 (define base-rule-defs
   '((dneg (~ (~ x)) x)
     (idem (& x x) x)
@@ -188,7 +169,7 @@
     (dem (~ (& x y)) (// (~ x) (~ y)))
     (dichot (// x (~ x)) (// y (~ y)))))
 
-;; example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
+;;example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
 (define (build-rule-corpus name-redex-pair-ls)
   (map (lambda (a) (let* ([name (car a)]
 			  [lhs (cadr a)]
@@ -200,8 +181,8 @@
 (define base-rule-ls
   (build-rule-corpus base-rule-defs))
 
-;; build-prover
-;; generate miniKanren sl prover with a given corpus of rules
+;;build-prover
+;;generate miniKanren sl prover with a given corpus of rules
 (define (build-named-prover prover-name rule-name-ls)
   (let* ([pn prover-name]
 	 [rule-clauses 
@@ -260,6 +241,25 @@
   (== (lambda () i) o))
 
 #|
+;Double Negation
+(build-named-rule 'dneg '(~ (~ x)) 'x)
+;Idempotency
+(build-named-rule 'idem '(& x x) 'x)
+;Commutativity
+(build-named-rule 'comm '(& x y) '(& y x))
+;Associativity
+(build-named-rule 'assoc '(& x (& y z)) '(& (& x y) z))
+;Absorption
+(build-named-rule 'absorp '(& x (// x y)) 'x)
+;Distributivity
+(build-named-rule 'distr '(& x (// y z)) '(// (& x y) (& x z)))
+;DeMorgan's Rule
+(build-named-rule 'dem '(~ (& x y)) '(// (~ x) (~ y)))
+;Dichotomy
+(build-named-rule 'dichot '(// x (~ x)) '(// y (~ y)))
+|#
+
+#|
 (define (eqvo i t o)
   (fresh (x y new-exp res-sub-t sub-t sub-o
             s1 s2 res-sub-t-1 res-sub-t-2 sub-t-1 sub-t-2 sub-o-1 sub-o-2)
@@ -312,90 +312,6 @@
           )))
 |#
 
-<<<<<<< HEAD
-#|
-=======
-;; miniKanren auxiliaries
-(define (mapo rel ls o)
-  (fresh (a d res acc)
-         (conde
-          [(== '() ls) (== '() o)]
-          [(== `(,a . ,d) ls) (rel a res) 
-           (== `(,res . ,acc) o)
-           (mapo rel d acc)]
-          )))
-
-(define (thunko i o)
-  (== (lambda () i) o))
-
-;;build-prover
-;;generate miniKanren sl prover with a given corpus of rules
-;;example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
-#|(define (build-prover rls)
-  (for-each (lambda (a) (build-named-rule (car a) (cadr a) (caddr a))) rls)
-  (let ([root-names (map car rls)]
-        [rule-names (list-flatten
-                     (map (lambda (a) (list a 
-                                            (sym-rule-name a) 
-                                            (dual-rule-name a) 
-                                            (sym-dual-rule-name a))) 
-                          root-names))]
-        [rules (map 
-                (lambda (a) 
-                  (list 
-                   (list a 'i 'x) 
-                   (list '== 'quasiquote 
-                         (cons (list 'unquote 'x a) . 'unquote 'y) 't) 
-                   (list 'prover-name 'x 'y 'o))) 
-                rule-names)])
-    (list 'lambda '(i t o) 
-          (list 'fresh var-list
-                (list 'conde
-                      rules)))))
-|#
-
-(define (prover-t prover-name rule-name-ls)
-  (let ([rule-clauses (map (lambda (a) (list (list a 'i 'x) (list '== 
-  `(fresh (x y new-exp res-sub-t sub-t sub-o
-             s1 s2 res-sub-t-1 res-sub-t-2 sub-t-1 sub-t-2 sub-o-1 sub-o-2)
-          ,(append (list 'conde)
-                   '([(== i o) (== '() t)])
-                   rule-clauses
-                   '([(mk-and s1 s2 i) 
-                      (== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
-                      (== `((,s2 and-comp-2) . ,res-sub-t-2) sub-t-2)            
-                      (eqvo s1 res-sub-t-1 sub-o-1)
-                      (eqvo s2 res-sub-t-2 sub-o-2)
-                      (== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
-                      (== `(& ,sub-o-1 ,sub-o-2) new-exp)
-                      (eqvo new-exp y o)])
-                   '([(mk-or s1 s2 i) 
-                      (== `((,s1 or-comp-1) . ,res-sub-t-1) sub-t-1) 
-                      (== `((,s2 or-comp-2) . ,res-sub-t-2) sub-t-2)            
-                      (eqvo s1 res-sub-t-1 sub-o-1)
-                      (eqvo s2 res-sub-t-2 sub-o-2)
-                      (== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
-                      (== `(// ,sub-o-1 ,sub-o-2) new-exp)
-                      (eqvo new-exp y o)]))))
-
-
->>>>>>> 7d771388429957df496b1a9555a8710decb4b4dc
-(define (gav-quote a)
-  (lambda () (list 'quasiquote a)))
-
-;a fold is in order
-(define (build-exp-as-list exp)
-  '())
-(define (exp->ls e acc)
-  (cond
-   [(null? e) acc]
-   [(eq? (car e) 'quote) (exp->ls (cdr e) (cons `(list 'quote ,(car e)) acc))]))
-<<<<<<< HEAD
-|#  
-                  
-=======
-                    
->>>>>>> 7d771388429957df496b1a9555a8710decb4b4dc
 #|
 ;rule r does not need to be passed quoted. (sym dneg 'x q) => (~ (~ x))
 (define (sym r i o) 
@@ -466,7 +382,6 @@ notes and lessons
 
 ' =/= quote
 ' = (quote <the-operand>)
-<<<<<<< HEAD
 
 true desire
 >'(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
@@ -493,8 +408,4 @@ Type (debug) to enter the debugger.
 	'(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1))
 #f
 <because (equal? '(a) (list 'a)) is #t.>
-
-
-=======
->>>>>>> 7d771388429957df496b1a9555a8710decb4b4dc
 |#
