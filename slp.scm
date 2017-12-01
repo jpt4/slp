@@ -171,12 +171,18 @@
 
 ;;example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
 (define (build-rule-corpus name-redex-pair-ls)
-  (map (lambda (a) (let* ([name (car a)]
-			  [lhs (cadr a)]
-			  [rhs (caddr a)])
-		     (build-named-rule name lhs rhs)
-		     name))
-       name-redex-pair-ls))
+  (fold-right (lambda (a acc)
+                (let* ([name (car a)]
+                       [lhs (cadr a)]
+                       [rhs (caddr a)])
+                  (build-named-rule name lhs rhs)
+                  (cons* name 
+                         (sym-rule-name name)
+                         (dual-rule-name name)
+                         (sym-dual-rule-name name)
+                         acc)))
+              '()
+              name-redex-pair-ls))
 
 (define base-rule-ls
   (build-rule-corpus base-rule-defs))
