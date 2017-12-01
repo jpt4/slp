@@ -190,7 +190,7 @@
 		 (list (list a 'i 'x) 
 		       (list '== (list 'quasiquote (cons (list (list 'unquote 'x) a) 
 							 (list 'unquote 'y))) 't)
-		       `(,pn i t o)))
+		       `(,pn x y o)))
 	       rule-name-ls)]
 	 [prover-source
 	  `(lambda (i t o)
