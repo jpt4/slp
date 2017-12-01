@@ -3,7 +3,7 @@
 ;; jpt4
 ;; sentential logic prover, from Robert Katz, 1994,
 ;; "Classical Sentential Logic Based on Logical Equivalence"
-;; Chez Scheme v9.4.1
+;; Chez Scheme v9.4.1+
 
 (load "miniKanren-with-symbolic-constraints/mk.scm")
 (load "miniKanren-with-symbolic-constraints/numbers.scm")
