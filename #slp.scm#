@@ -44,7 +44,8 @@
 
 ;;build rule as value
 (define (build-named-rule n l r) (build-named-rule-value n l r))
-(define (build-named-rule-value n l r)
+(define build-named-rule-value 
+  (case-lambda n l r)
   (let* ([rule-source (build-rule-value l r)]
          [sym-rule-source (build-sym-rule-value l r)]
          [dual-rule-source (build-dual-rule-value l r)]
