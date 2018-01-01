@@ -28,6 +28,7 @@
    [(symbolo ss) (=/= ss '~) (=/= ss '&) (=/= ss '//)])
   )
 
+;;compound statements
 (define (mk-not s c) (== `(~ ,s) c))
 (define (mk-and s1 s2 c) (== `(& ,s1 ,s2) c))
 (define (mk-or s1 s2 c) (== `(// ,s1 ,s2) c))
@@ -170,7 +171,7 @@
     (dichot (// x (~ x)) (// y (~ y)))))
 
 ;;example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
-(define (build-base-rule-corpus name-redex-pair-ls)
+(define (build-rule-corpus name-redex-pair-ls)
   (fold-right (lambda (a acc)
                 (let* ([name (car a)]
                        [lhs (cadr a)]
@@ -184,7 +185,7 @@
               '()
               name-redex-pair-ls))
 
-(define base-rule-ls
+(define base-rules
   (build-rule-corpus base-rule-defs))
 
 ;;build-prover
@@ -200,33 +201,39 @@
 	       rule-name-ls)]
 	 [prover-source
 	  `(lambda (i t o)
-	     (fresh (x y new-exp res-sub-t sub-t sub-o
-		       s1 s2 res-sub-t-1 res-sub-t-2 sub-t-1 sub-t-2 sub-o-1 sub-o-2)
+	     (fresh (x y 
+		       new-exp res-sub-t sub-t sub-o
+		       s1 s2 res-sub-t-l res-sub-t-r sub-t-l sub-t-r sub-o-l sub-o-r)
 		    ,(append (list 'conde)
 			     '([(== i o) (== '() t)])
 			     '([(simple-statement i) (== `((,i simp)) t) (== i o)])
 			     rule-clauses
+			     `([(mk-not x i) (== `((,x not-comp) . ,res-sub-t) sub-t) 
+			      (eqvo x res-sub-t sub-o)
+			      (== `((sub-trace ,sub-t) . ,y) t)
+			      (== `(~ ,sub-o) new-exp)
+			      (eqvo new-exp y o)])
 			     `([(mk-and s1 s2 i)
-              (== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
-              (== `((,s2 and-comp-2) . ,res-sub-t-2) sub-t-2)            
-              (,pn s1 res-sub-t-1 sub-o-1)
-              (,pn s2 res-sub-t-2 sub-o-2)
-              (== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
-              (== `(& ,sub-o-1 ,sub-o-2) new-exp)
-              (,pn new-exp y o)])
+				(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l) 
+				(== `((,s2 and-comp-r) . ,res-sub-t-r) sub-t-r)            
+				(,pn s1 res-sub-t-l sub-o-l)
+				(,pn s2 res-sub-t-r sub-o-r)
+				(== `((sub-trace ,sub-t-l) (sub-trace ,sub-t-r) . ,y) t)
+				(== `(& ,sub-o-l ,sub-o-r) new-exp)
+				(,pn new-exp y o)])
 			     `([(mk-or s1 s2 i) 
-              (== `((,s1 or-comp-1) . ,res-sub-t-1) sub-t-1) 
-              (== `((,s2 or-comp-2) . ,res-sub-t-2) sub-t-2)            
-              (,pn s1 res-sub-t-1 sub-o-1)
-              (,pn s2 res-sub-t-2 sub-o-2)
-              (== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
-              (== `(// ,sub-o-1 ,sub-o-2) new-exp)
-              (,pn new-exp y o)]))))])
+				(== `((,s1 or-comp-l) . ,res-sub-t-l) sub-t-l) 
+				(== `((,s2 or-comp-r) . ,res-sub-t-r) sub-t-r)            
+				(,pn s1 res-sub-t-l sub-o-l)
+				(,pn s2 res-sub-t-r sub-o-r)
+				(== `((sub-trace ,sub-t-l) (sub-trace ,sub-t-r) . ,y) t)
+				(== `(// ,sub-o-l ,sub-o-r) new-exp)
+				(,pn new-exp y o)]))))])
     (define-top-level-value (rule-source-name pn) prover-source)
     (define-top-level-value pn (eval prover-source))))
 
 ;;base-provero
-(build-named-prover 'base-provero base-rule-ls)
+(build-named-prover 'base-provero base-rules)
 
 ;;Syntactically mark statements as equivalent.
 (define (mk-eqv i o)
@@ -268,7 +275,7 @@
 #|
 (define (eqvo i t o)
   (fresh (x y new-exp res-sub-t sub-t sub-o
-            s1 s2 res-sub-t-1 res-sub-t-2 sub-t-1 sub-t-2 sub-o-1 sub-o-2)
+            s1 s2 res-sub-t-l res-sub-t-r sub-t-l sub-t-r sub-o-l sub-o-r)
          (conde
           ;trivial result
           [(== i o) (== '() t)]
@@ -300,20 +307,20 @@
            (== `(~ ,sub-o) new-exp)
            (eqvo new-exp y o)]
           [(mk-and s1 s2 i) 
-           (== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
-           (== `((,s2 and-comp-2) . ,res-sub-t-2) sub-t-2)            
-           (eqvo s1 res-sub-t-1 sub-o-1)
-           (eqvo s2 res-sub-t-2 sub-o-2)
-           (== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
-           (== `(& ,sub-o-1 ,sub-o-2) new-exp)
+           (== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l) 
+           (== `((,s2 and-comp-r) . ,res-sub-t-r) sub-t-r)            
+           (eqvo s1 res-sub-t-l sub-o-l)
+           (eqvo s2 res-sub-t-r sub-o-r)
+           (== `((sub-trace ,sub-t-l) (sub-trace ,sub-t-r) . ,y) t)
+           (== `(& ,sub-o-l ,sub-o-r) new-exp)
            (eqvo new-exp y o)]
           [(mk-or s1 s2 i) 
-           (== `((,s1 or-comp-1) . ,res-sub-t-1) sub-t-1) 
-           (== `((,s2 or-comp-2) . ,res-sub-t-2) sub-t-2)            
-           (eqvo s1 res-sub-t-1 sub-o-1)
-           (eqvo s2 res-sub-t-2 sub-o-2)
-           (== `((sub-trace ,sub-t-1) (sub-trace ,sub-t-2) . ,y) t)
-           (== `(// ,sub-o-1 ,sub-o-2) new-exp)
+           (== `((,s1 or-comp-l) . ,res-sub-t-l) sub-t-l) 
+           (== `((,s2 or-comp-r) . ,res-sub-t-r) sub-t-r)            
+           (eqvo s1 res-sub-t-l sub-o-l)
+           (eqvo s2 res-sub-t-r sub-o-r)
+           (== `((sub-trace ,sub-t-l) (sub-trace ,sub-t-r) . ,y) t)
+           (== `(// ,sub-o-l ,sub-o-r) new-exp)
            (eqvo new-exp y o)]
           )))
 |#
@@ -390,28 +397,28 @@ notes and lessons
 ' = (quote <the-operand>)
 
 true desire
->'(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
-(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
+>'(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l) 
+(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l) 
 <however, I thought>
->`(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1) 
+>`(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l) 
 Exception: variable s1 is not bound
 Type (debug) to enter the debugger.
 <similar to the result of>
->(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1)
+>(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l)
 Exception: variable s1 is not bound
 Type (debug) to enter the debugger.
 <except it doesn't>
->`(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1)
-(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1)
+>`(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l)
+(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l)
 <regardless, the following tierce is also the case>
-> (equal? `,(list '== (list 'quasiquote (cons (list (list 'unquote 's1) 'and-comp-1) (list 'unquote 'res-sub-t-1))) 'sub-t-1) 
-	  `(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1))
+> (equal? `,(list '== (list 'quasiquote (cons (list (list 'unquote 's1) 'and-comp-l) (list 'unquote 'res-sub-t-l))) 'sub-t-l) 
+	  `(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l))
 #t
-> (eq? `,(list '== (list 'quasiquote (cons (list (list 'unquote 's1) 'and-comp-1) (list 'unquote 'res-sub-t-1))) 'sub-t-1) 
-       `(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1))
+> (eq? `,(list '== (list 'quasiquote (cons (list (list 'unquote 's1) 'and-comp-l) (list 'unquote 'res-sub-t-l))) 'sub-t-l) 
+       `(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l))
 #f
-> (eqv? `,(list '== (list 'quasiquote (cons (list (list 'unquote 's1) 'and-comp-1) (list 'unquote 'res-sub-t-1))) 'sub-t-1) 
-	'(== `((,s1 and-comp-1) . ,res-sub-t-1) sub-t-1))
+> (eqv? `,(list '== (list 'quasiquote (cons (list (list 'unquote 's1) 'and-comp-l) (list 'unquote 'res-sub-t-l))) 'sub-t-l) 
+	'(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l))
 #f
 <because (equal? '(a) (list 'a)) is #t.>
 |#
