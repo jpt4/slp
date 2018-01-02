@@ -191,45 +191,51 @@
 ;;build-prover
 ;;generate miniKanren sl prover with a given corpus of rules
 (define (build-named-prover prover-name rule-name-ls)
-  (let* ([pn prover-name]
-	 [rule-clauses 
-	  (map (lambda (a) 
-		 (list (list a 'i 'x) 
-		       (list '== (list 'quasiquote (cons (list (list 'unquote 'x) a) 
-							 (list 'unquote 'y))) 't)
-		       `(,pn x y o)))
-	       rule-name-ls)]
-	 [prover-source
-	  `(lambda (i t o)
-	     (fresh (x y 
-		       new-exp res-sub-t sub-t sub-o
-		       s1 s2 res-sub-t-l res-sub-t-r sub-t-l sub-t-r sub-o-l sub-o-r)
-		    ,(append (list 'conde)
-			     '([(== i o) (== '() t)])
-			     '([(simple-statement i) (== `((,i simp)) t) (== i o)])
-			     rule-clauses
-			     `([(mk-not x i) 
-				(== `((,x not-comp) . ,res-sub-t) sub-t) 
-				(,pn x res-sub-t sub-o)
-				(== `((sub-trace ,sub-t) . ,y) t)
-				(== `(~ ,sub-o) new-exp)
-				(,pn new-exp y o)])
-			     `([(mk-and s1 s2 i)
-				(== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l) 
-				(== `((,s2 and-comp-r) . ,res-sub-t-r) sub-t-r)            
-				(,pn s1 res-sub-t-l sub-o-l)
-				(,pn s2 res-sub-t-r sub-o-r)
-				(== `((sub-trace ,sub-t-l) (sub-trace ,sub-t-r) . ,y) t)
-				(== `(& ,sub-o-l ,sub-o-r) new-exp)
-				(,pn new-exp y o)])
-			     `([(mk-or s1 s2 i) 
-				(== `((,s1 or-comp-l) . ,res-sub-t-l) sub-t-l) 
-				(== `((,s2 or-comp-r) . ,res-sub-t-r) sub-t-r)            
-				(,pn s1 res-sub-t-l sub-o-l)
-				(,pn s2 res-sub-t-r sub-o-r)
-				(== `((sub-trace ,sub-t-l) (sub-trace ,sub-t-r) . ,y) t)
-				(== `(// ,sub-o-l ,sub-o-r) new-exp)
-				(,pn new-exp y o)]))))])
+  (let* 
+      ([pn prover-name]
+       [rule-clauses 
+        (map (lambda (a) 
+               (list (list a 'i 'x) 
+                     (list '== (list 'quasiquote 
+                                     (cons (list (list 'unquote 'x) a) 
+                                           (list 'unquote 'y))) 't)
+                     `(,pn x y o)))
+             rule-name-ls)]
+       [prover-source
+        `(lambda (i t o)
+           (fresh 
+            (x y 
+               new-exp res-sub-t sub-t sub-o
+               s1 s2 res-sub-t-l res-sub-t-r sub-t-l sub-t-r sub-o-l sub-o-r)
+            ,(append (list 'conde)
+                     '([(== i o) (== '() t)])
+                     '([(simple-statement i) (== `((,i simp)) t) (== i o)])
+                     ;((sub-trace (((& a a) not-comp) (a idem))))
+                     `([(mk-not x i) 
+                       (== `((,x not-comp) . ,res-sub-t) sub-t) 
+                       (,pn x res-sub-t sub-o)
+                       (== `((sub-trace ,sub-t) . ,y) t)
+                       (== `(~ ,sub-o) new-exp)
+                       (,pn new-exp y o)])
+                     `([(mk-and s1 s2 i)
+                        (== `((,s1 and-comp-l) . ,res-sub-t-l) sub-t-l) 
+                        (== `((,s2 and-comp-r) . ,res-sub-t-r) sub-t-r)
+                        (,pn s1 res-sub-t-l sub-o-l)
+                        (,pn s2 res-sub-t-r sub-o-r)
+                        (== `((sub-trace ,sub-t-l) 
+                              (sub-trace ,sub-t-r) . ,y) t)
+                        (== `(& ,sub-o-l ,sub-o-r) new-exp)
+                        (,pn new-exp y o)])
+                     `([(mk-or s1 s2 i) 
+                        (== `((,s1 or-comp-l) . ,res-sub-t-l) sub-t-l) 
+                        (== `((,s2 or-comp-r) . ,res-sub-t-r) sub-t-r)        
+                        (,pn s1 res-sub-t-l sub-o-l)
+                        (,pn s2 res-sub-t-r sub-o-r)
+                        (== `((sub-trace ,sub-t-l) 
+                              (sub-trace ,sub-t-r) . ,y) t)
+                        (== `(// ,sub-o-l ,sub-o-r) new-exp)
+                        (,pn new-exp y o)])
+                     rule-clauses)))])
     (define-top-level-value (rule-source-name pn) prover-source)
     (define-top-level-value pn (eval prover-source))))
 
