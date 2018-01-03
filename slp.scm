@@ -171,19 +171,27 @@
     (dichot (// x (~ x)) (// y (~ y)))))
 
 ;;example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
-(define (build-rule-corpus name-redex-pair-ls)
-  (fold-right (lambda (a acc)
-                (let* ([name (car a)]
-                       [lhs (cadr a)]
-                       [rhs (caddr a)])
-                  (build-named-rule name lhs rhs)
-                  (cons* name 
-                         (sym-rule-name name)
-                         (dual-rule-name name)
-                         (sym-dual-rule-name name)
-                         acc)))
-              '()
-              name-redex-pair-ls))
+(define build-rule-corpus 
+  (case-lambda
+   [(name-redex-pair-ls)
+    (build-rule-corpus name-redex-pair-ls '(sym dual sym-dual))]
+   [(name-redex-pair-ls flag-ls)
+    (fold-right (lambda (a acc)
+                  (let* ([name (car a)]
+                         [lhs (cadr a)]
+                         [rhs (caddr a)])
+                    (build-named-rule name lhs rhs)
+                    (remove (void)
+                            (cons* name 
+                                   (if (member 'sym flag-ls)
+                                       (sym-rule-name name))
+                                   (if (member 'dual flag-ls)
+                                       (dual-rule-name name))
+                                   (if (member 'sym-dual flag-ls)
+                                       (sym-dual-rule-name name))
+                                   acc))))
+                '()
+                name-redex-pair-ls)]))
 
 (define base-rules
   (build-rule-corpus base-rule-defs))
