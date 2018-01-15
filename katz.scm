@@ -6,7 +6,7 @@
 ;;using the slp.scm theorem prover as aid.
 ;;Chez Scheme v9.4.1+
 
-(load "slp.scm")
+(load "/home/jpt4/code/slp/slp.scm")
 
 ;;Ch. 1
 (define c1-eqvp 
