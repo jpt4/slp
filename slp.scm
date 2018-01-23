@@ -5,10 +5,10 @@
 ;; "Classical Sentential Logic Based on Logical Equivalence"
 ;; Chez Scheme v9.4.1+
 
-(load "miniKanren-with-symbolic-constraints/mk.scm")
-(load "miniKanren-with-symbolic-constraints/numbers.scm")
+(load "/home/jpt4/code/slp/miniKanren-with-symbolic-constraints/mk.scm")
+(load "/home/jpt4/code/slp/miniKanren-with-symbolic-constraints/numbers.scm")
 ;;match.ss for dual rule generator
-(load "match.ss")
+(load "/home/jpt4/code/slp/match.ss")
 
 (define (any-statement s)
   (conde
@@ -216,7 +216,7 @@
                new-exp res-sub-t sub-t sub-o
                sl sr res-sub-t-l res-sub-t-r sub-t-l sub-t-r sub-o-l sub-o-r)
             ,(append (list 'conde)
-                     '([(== i o) (== '() t)])
+                     '([(== i o) (== '(end) t)])
                      '([(simple-statement i) (== `((,i simp)) t) (== i o)])
                      ;((sub-trace (((& a a) not-comp) (a idem))))
                      `([(mk-not x i) 
