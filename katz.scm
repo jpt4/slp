@@ -9,18 +9,34 @@
 (load "/home/jpt4/code/slp/slp.scm")
 
 ;;Ch. 1
-(define c1-eqvp 
+(define ch1-rule-defs
+  '((dneg (~ (~ x)) x)
+    (idem (& x x) x)
+    (comm (& x y) (& y x))
+    (assoc (& x (& y z)) (& (& x y) z))
+    (absorp (& x (// x y)) x)
+    (distr (& x (// y z)) (// (& x y) (& x z)))
+    (dem (~ (& x y)) (// (~ x) (~ y)))
+    (dichot (// x (~ x)) (// y (~ y)))))
+
+(define ch1-rule-corpus (build-rule-corpus ch1-rule-defs '()))
+
+;;ch1 prover
+(build-named-prover 'ch1-provero ch1-rule-corpus)
+
+;;chapter common auxiliaries
+(define eqv
   (case-lambda
-   [(i)
-    (run 1 (x y z) (== i x) (base-provero x y z))]
-   [(n i) (number? n)
-    (run n (x y z) (== i x) (base-provero x y z))]
-   [(i o)
-    (run 1 (x y z) (== i x) (== o z) (base-provero x y z))]
-   [(n i o) (number? n)
-    (run n (x y z) (== i x) (== o z) (base-provero x y z))]
-   [(i t o)
-    (run 1 (x y z) (== i x) (== t y) (== o z) (base-provero x y z))]
-   [(n i t o) (number? n)
-    (run n (x y z) (== i x) (== t y) (== o z) (base-provero x y z))]
+   [(p i)
+    (run 1 (x y z) (== i x) (p x y z))]
+   [(p n i) (number? n)
+    (run n (x y z) (== i x) (p x y z))]
+   [(p i o)
+    (run 1 (x y z) (== i x) (== o z) (p x y z))]
+   [(p n i o) (number? n)
+    (run n (x y z) (== i x) (== o z) (p x y z))]
+   [(p i t o)
+    (run 1 (x y z) (== i x) (== t y) (== o z) (p x y z))]
+   [(p n i t o) (number? n)
+    (run n (x y z) (== i x) (== t y) (== o z) (p x y z))]
 ))
