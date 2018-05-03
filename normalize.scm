@@ -45,3 +45,8 @@
           [(lito? s)])))
 
 (define (cnfo? s) (cnf-conjo? s))
+
+(define (nnfo i o)
+  (fresh (a b)
+         (conde
+          [(== `(-> ,a ,b) i) (== `(// (~ ,a) ,b) o)])))
