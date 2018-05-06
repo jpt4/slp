@@ -47,9 +47,9 @@
 (define (cnfo? s) (cnf-conjo? s))
 
 (define (cnfo i o)
-  (fresh (p q r)
+  (fresh (p q r resp resq resr ress)
          (conde
-          [(== `(-> ,p ,q) i) (== `(// (~ ,p) ,q) o)]
+          [(== `(-> ,p ,q) i) (== `(// (~ ,resp) ,resq) o) (cnfo p resp) (cnfo q resq)]
           [(== `(~ (// ,p ,q)) i) (== `(& (~ ,p) (~ ,q)) o)]
           [(== `(~ (& ,p ,q)) i) (== `(// (~ ,p) (~ ,q)) o)]
           [(== `(~ (~ ,p)) i) (== p o)]
