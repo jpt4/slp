@@ -51,14 +51,14 @@
          (conde
 	  [(ground-termo? i) (== i o)]
 	  [(cnfo? i) (== i o)]
-	  [(== `(~ ,p) i) (== `(~ ,resp) o) (cnfo resp p)]
-	  [(== `(// ,p ,q) i) (== `(// ,resp ,resq) o) (cnfo resp p) (cnfo resq q)]
-	  [(== `(& ,p ,q) i) (== `(& ,resp ,resq) o) (cnfo resp p) (cnfo resq q)]
+	  [(== `(~ ,p) i) (cnfo `(~ ,resp) o) (cnfo p resp)]
+	  [(== `(// ,p ,q) i) (cnfo `(~ (& (~ ,resp) (~ ,resq))) o) (cnfo p resp) (cnfo q resq)]
+	  [(== `(& ,p ,q) i) (cnfo `(& ,resp ,resq) o) (cnfo p resp) (cnfo q resq)]
 	  [(== `(~ (~ ,p)) i) (== resp o) (cnfo p resp)]
-          [(== `(-> ,p ,q) i) (== `(// (~ ,resp) ,resq) o) (cnfo p resp) (cnfo q resq)]
-          [(== `(~ (// ,p ,q)) i) (== `(& (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
-          [(== `(~ (& ,p ,q)) i) (== `(// (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
-	  [(== `(// ,p (& ,q ,r)) i) (== `(& (// ,resp ,resq) (// ,resp ,resr)) o) (cnfo p resp) (cnfo q resq) (cnfo r resr)]
+          [(== `(-> ,p ,q) i) (cnfo `(// (~ ,resp) ,resq) o) (cnfo p resp) (cnfo q resq)]
+          [(== `(~ (// ,p ,q)) i) (cnfo `(& (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
+          [(== `(~ (& ,p ,q)) i) (cnfo `(// (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
+	  [(== `(// ,p (& ,q ,r)) i) (cnfo `(& (// ,resp ,resq) (// ,resp ,resr)) o) (cnfo p resp) (cnfo q resq) (cnfo r resr)]
 	  )))
 
 (define (ground-termo? t)
