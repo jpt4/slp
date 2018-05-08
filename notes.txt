@@ -1,0 +1,6 @@
+;;notes.txt
+;;20180508Z
+;;jpt4
+;;notes on slp development
+
+Instead of a rule for each associative/commutative/order difference, normalize to fixed order and scan again.
