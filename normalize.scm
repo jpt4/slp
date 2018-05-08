@@ -1,7 +1,7 @@
 ;;normalize.scm
 ;;20180501Z
 ;;jpt4
-;;Reduce arbitrary SL expression to disjunctive normal form
+;;Reduce arbitrary SL expression to clausal normal form
 
 (load "miniKanren-with-symbolic-constraints/mk.scm")
 
@@ -47,18 +47,32 @@
 (define (cnfo? s) (cnf-conjo? s))
 
 (define (cnfo i o)
-  (fresh (p q r resp resq resr resi)
+  (fresh (p q r resp resq resr respq respr resi)
          (conde
-	  [(ground-termo? i) (== i o)]
-	  [(cnfo? i) (== i o)]
-	  [(== `(~ ,p) i) (cnfo `(~ ,resp) o) (cnfo p resp)]
-	  [(== `(// ,p ,q) i) (cnfo `(~ (& (~ ,resp) (~ ,resq))) o) (cnfo p resp) (cnfo q resq)]
-	  [(== `(& ,p ,q) i) (cnfo `(& ,resp ,resq) o) (cnfo p resp) (cnfo q resq)]
-	  [(== `(~ (~ ,p)) i) (== resp o) (cnfo p resp)]
-          [(== `(-> ,p ,q) i) (cnfo `(// (~ ,resp) ,resq) o) (cnfo p resp) (cnfo q resq)]
-          [(== `(~ (// ,p ,q)) i) (cnfo `(& (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
-          [(== `(~ (& ,p ,q)) i) (cnfo `(// (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
-	  [(== `(// ,p (& ,q ,r)) i) (cnfo `(& (// ,resp ,resq) (// ,resp ,resr)) o) (cnfo p resp) (cnfo q resq) (cnfo r resr)]
+	  ;;[(ground-termo? i) (== i o)]
+	  ;[(cnfo? i) (== i o)]
+	  [(cnfo? i) (== 'cnfo? o)]
+	  ;;[(== `(~ ,p) i) (cnfo `(~ ,resp) o) (cnfo p resp)]
+	  ;[(== `(// ,p ,q) i) (cnfo `(// ,resp ,resq) o) (cnfo p resp) (cnfo q resq)]
+	  [(== `(// ,p ,q) i) (== '// o)]
+	  ;;[(== `(// ,p ,q) i) (cnfo `(~ (& (~ ,resp) (~ ,resq))) o) (cnfo p resp) (cnfo q resq)]
+	  ;[(== `(& ,p ,q) i) (cnfo `(& ,resp ,resq) o) (cnfo p resp) (cnfo q resq)]
+	  [(== `(& ,p ,q) i) (== '& o)]
+	  ;[(== `(~ (~ ,p)) i)  (cnfo p o)]
+	  [(== `(~ (~ ,p)) i)  (== '~ o)]
+	  ;;[(== `(~ (~ ,p)) i) (== resp o) (cnfo p resp)]
+	  ;;[(== `(// p (& ,q ,r)) i) (cnfo `(& ,respq ,respr) o) (cnfo `(// ,p ,q) respq) (cnfo `(// ,p ,r) respr)]
+	  ;;[(== `(// (& ,q ,r) p) i) (cnfo `(& ,respq ,respr) o) (cnfo `(// ,q ,p) respq) (cnfo `(// ,r ,p) respr)]
+	  ;[(== `(-> ,p ,q) i) (cnfo `(// (~ ,resp) ,resq) o) (cnfo p resp) (cnfo q resq)]
+	  [(== `(-> ,p ,q) i) (== '-> o)]
+          ;[(== `(~ (// ,p ,q)) i) (cnfo `(& (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
+	  [(== `(~ (// ,p ,q)) i) (== '~// o)]
+          ;[(== `(~ (& ,p ,q)) i) (cnfo `(// (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
+	  [(== `(~ (& ,p ,q)) i) (== '~& o)]
+	  ;[(== `(// ,p (& ,q ,r)) i) (cnfo `(& (// ,resp ,resq) (// ,resp ,resr)) o) (cnfo p resp) (cnfo q resq) (cnfo r resr)]
+	  [(== `(// ,p (& ,q ,r)) i) (== '//pqr o)]
+	  ;[(== `(// (& ,q ,r) ,p) i) (cnfo `(& (// ,resq ,resp) (// ,resr ,resp)) o) (cnfo p resp) (cnfo q resq) (cnfo r resr)]
+	  [(== `(// (& ,q ,r) ,p) i) (== '//qrp o)]
 	  )))
 
 (define (ground-termo? t)
@@ -71,4 +85,4 @@
 	  )))
 
 ;(~ (~ (// a b))) => (// a b)
-;(~ (~ (// a (// a (& b c))))) => (// a (// a (& b c)))
+;(run 1 (q) (cnfo '(~ (~ (// a (// a (& b c))))))) => (// a (// a (& b c)))
