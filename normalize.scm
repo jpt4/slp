@@ -49,30 +49,35 @@
 (define (cnfo i o)
   (fresh (p q r resp resq resr respq respr resi)
          (conde
-	  ;;[(ground-termo? i) (== i o)]
-	  ;[(cnfo? i) (== i o)]
-	  [(cnfo? i) (== 'cnfo? o)]
-	  ;;[(== `(~ ,p) i) (cnfo `(~ ,resp) o) (cnfo p resp)]
+	  [(cnfo? i) (== i o)]
+	  ;[(cnfo? i) (== 'cnfo? o)]
+	  [(== `(// ,p (& ,q ,r)) i) 
+	   (cnfo p resp) (cnfo q resq) (cnfo r resr)
+	   (cnfo `(// ,resp ,resq) respq) (cnfo `(// ,resp ,resr) respr)
+	   (cnfo `(& ,respq ,respr) o)]
+	  [(== `(// (& ,q ,r) ,p) i) 
+	   (cnfo p resp) (cnfo q resq) (cnfo r resr)
+	   (cnfo `(// ,resq ,resp) respq) (cnfo `(// ,resr ,resp) respr)
+	   (cnfo `(& ,respq ,respr) o)]
+	  ;[(== `(// ,p (& ,q ,r)) i) (== '//pqr o)]
+	  ;[(== `(// (& ,q ,r) ,p) i) (cnfo `(& (// ,resq ,resp) (// ,resr ,resp)) o) (cnfo p resp) (cnfo q resq) (cnfo r resr)]
+	  ;[(== `(// (& ,q ,r) ,p) i) (== '//qrp o)]
 	  ;[(== `(// ,p ,q) i) (cnfo `(// ,resp ,resq) o) (cnfo p resp) (cnfo q resq)]
-	  [(== `(// ,p ,q) i) (== '// o)]
+	  ;[(== `(// ,p ,q) i) (== `(//resp=,resp //resq=,resq) o) (cnfo p resp) (cnfo q resq)]
 	  ;;[(== `(// ,p ,q) i) (cnfo `(~ (& (~ ,resp) (~ ,resq))) o) (cnfo p resp) (cnfo q resq)]
 	  ;[(== `(& ,p ,q) i) (cnfo `(& ,resp ,resq) o) (cnfo p resp) (cnfo q resq)]
-	  [(== `(& ,p ,q) i) (== '& o)]
-	  ;[(== `(~ (~ ,p)) i)  (cnfo p o)]
-	  [(== `(~ (~ ,p)) i)  (== '~ o)]
+	  ;[(== `(& ,p ,q) i) (== `(&resp=,resp &resq=,resq) o) (cnfo p resp) (cnfo q resq)]
+	  [(== `(~ (~ ,p)) i)  (cnfo p o)]
+	  ;[(== `(~ (~ ,p)) i)  (== '~ o)]
 	  ;;[(== `(~ (~ ,p)) i) (== resp o) (cnfo p resp)]
 	  ;;[(== `(// p (& ,q ,r)) i) (cnfo `(& ,respq ,respr) o) (cnfo `(// ,p ,q) respq) (cnfo `(// ,p ,r) respr)]
 	  ;;[(== `(// (& ,q ,r) p) i) (cnfo `(& ,respq ,respr) o) (cnfo `(// ,q ,p) respq) (cnfo `(// ,r ,p) respr)]
 	  ;[(== `(-> ,p ,q) i) (cnfo `(// (~ ,resp) ,resq) o) (cnfo p resp) (cnfo q resq)]
 	  [(== `(-> ,p ,q) i) (== '-> o)]
-          ;[(== `(~ (// ,p ,q)) i) (cnfo `(& (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
-	  [(== `(~ (// ,p ,q)) i) (== '~// o)]
-          ;[(== `(~ (& ,p ,q)) i) (cnfo `(// (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
-	  [(== `(~ (& ,p ,q)) i) (== '~& o)]
-	  ;[(== `(// ,p (& ,q ,r)) i) (cnfo `(& (// ,resp ,resq) (// ,resp ,resr)) o) (cnfo p resp) (cnfo q resq) (cnfo r resr)]
-	  [(== `(// ,p (& ,q ,r)) i) (== '//pqr o)]
-	  ;[(== `(// (& ,q ,r) ,p) i) (cnfo `(& (// ,resq ,resp) (// ,resr ,resp)) o) (cnfo p resp) (cnfo q resq) (cnfo r resr)]
-	  [(== `(// (& ,q ,r) ,p) i) (== '//qrp o)]
+          [(== `(~ (// ,p ,q)) i) (cnfo `(& (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
+	  ;[(== `(~ (// ,p ,q)) i) (== '~// o)]
+          [(== `(~ (& ,p ,q)) i) (cnfo `(// (~ ,resp) (~ ,resq)) o) (cnfo p resp) (cnfo q resq)]
+	  ;[(== `(~ (& ,p ,q)) i) (== '~& o)]
 	  )))
 
 (define (ground-termo? t)
