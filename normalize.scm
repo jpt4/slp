@@ -47,7 +47,7 @@
 (define (cnfo? s) (cnf-conjo? s))
 
 (define (cnfo i o)
-  (fresh (p q r resp resq resr respq respr resi)
+  (fresh (p q r carp carq resp resq resr respq respr resi)
          (conde
           [(cnfo? i) (== i o)]
           [(== `(// ,p (& ,q ,r)) i) 
@@ -55,16 +55,22 @@
            (cnfo `(& ,respq ,respr) o)]
           [(== `(// (& ,q ,r) ,p) i) 
            (cnfo `(// ,p (& ,q ,r)) o)]
-          [(== `(// ,p ,q) i) (cnfo `(// ,resp ,resq) o) 
+          [(== `(// ,p ,q) i) (caro q carq) (=/= carq '&) 
+           (cnfo `(// ,resp ,resq) o) 
            (cnfo p resp) (cnfo q resq)]
-          [(== `(& ,p ,q) i) (cnfo `(& ,resp ,resq) o) 
+          [(== `(& ,p ,q) i) (== `(& ,resp ,resq) o) 
            (cnfo p resp) (cnfo q resq)]
           [(== `(~ (~ ,p)) i)  (cnfo p o)]
           [(== `(-> ,p ,q) i) (cnfo `(// (~ ,resp) ,resq) o) 
            (cnfo p resp) (cnfo q resq)]
-          [(== `(~ (// ,p ,q)) i) (cnfo `(& (~ ,p) (~ ,q)) o)]
+          [(== `(~ (// ,p ,q)) i) (cnfo `(~ ,p) resp) (cnfo `(~ ,q) resq)
+           (== `(& ,resp ,resq) o)]
           [(== `(~ (& ,p ,q)) i) (cnfo `(// (~ ,p) (~ ,q)) o)]
           )))
+
+(define (caro i o)
+  (fresh (a b)
+         (== `(,a . ,b) i) (== a o)))
 
 (define (ground-termo? t)
   (fresh (p q)
@@ -79,5 +85,24 @@
 #|(run 1 (q) (cnfo '(~ (~ (// a (// a (& b c)))))))
  => 
 (// a (// a (& b c)))
-(// a (
+(// a (& (// a b) (// a c)))
+(& (// a (// a b)) (// a (// a c)))
+
+> (load "normalize.scm")
+> (run 1 (q) (cnfo '(~ (// a b)) q))
+((& (~ a) (~ b)))
+> (run 1 (q) (cnfo '(~ (// (~ a) (~ b))) q))
+((& a b))
+> (run 1 (q) (cnfo '(~ (// (~ (// a b)) (~ b))) q))
+((& (// a b) b))
+> (run 1 (q) (cnfo '(~ (// (// a b)) (~ b))) q))
+Exception: incorrect number of arguments to #<procedure cnfo at normalize.scm:1033>
+Type (debug) to enter the debugger.
+> (run 1 (q) (cnfo '(~ (// (// a b) (~ b))) q))
+((& (& (~ a) (~ b)) b))
+> (run 1 (q) (cnfo '(// a (& b c)) q))
+((& (// a b) (// a c)))
+> (run 1 (q) (cnfo '(// a (// a (& b c))) q))
+
+
 |#
