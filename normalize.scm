@@ -7,8 +7,8 @@
 
 (define (simple-statement ss)
   (conde
-   [(symbolo ss) (=/= ss '~) (=/= ss '&) (=/= ss '//)])
-  )
+   [(symbolo ss) (=/= ss '~) (=/= ss '&) (=/= ss '//) (=/= ss '->)]
+   ))
 
 (define (variable s) (simple-statement s))
 
@@ -45,6 +45,27 @@
           [(lito? s)])))
 
 (define (cnfo? s) (cnf-conjo? s))
+
+(define (sentence s)
+  (fresh (p q)
+	 (conde
+	  [(variable s)]
+	  [(== `(~ ,p) s) (sentence p)]
+	  [(== `(& ,p ,q) s) (sentence p) (sentence q)]
+	  [(== `(// ,p ,q) s) (sentence p) (sentence q)]
+	  [(== `(-> ,p ,q) s) (sentence p) (sentence q)]
+)))
+
+(define (impl-freeo i o)
+  (fresh (p q resp resq)
+	 ;(sentence p) (sentence q)
+	 (conde
+	  [(variable i) (== i o)]
+	  [(== `(~ ,p) i) (sentence p) (impl-freeo p resp) (== `(~ ,resp) o)]
+	  [(== `(& ,p ,q) i) (sentence p) (sentence q) (impl-freeo p resp) (impl-freeo q resq) (== `(& ,resp ,resq) o)]
+	  [(== `(// ,p ,q) i) (sentence p) (sentence q) (impl-freeo p resp) (impl-freeo q resq) (== `(// ,resp ,resq) o)]
+	  [(== `(-> ,p ,q) i) (sentence p) (sentence q) (impl-freeo `(// (~ ,p) ,q) o)]
+	  )))
 
 (define (cnfo i o)
   (fresh (p q r resp resq resr respq respr resi)
