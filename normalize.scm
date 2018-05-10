@@ -4,6 +4,11 @@
 ;;Reduce arbitrary SL expression to clausal normal form
 
 (load "miniKanren-with-symbolic-constraints/mk.scm")
+(load "miniKanren-with-symbolic-constraints/numbers.scm")
+(load "miniKanren-with-symbolic-constraints/test-check.scm")
+(load "miniKanren-with-symbolic-constraints/test-interp.scm")
+
+(define (add1o i o) (pluso i '(1) o))
 
 (define (simple-statement ss)
   (conde
@@ -60,33 +65,67 @@
   (fresh (p q resp resq)
 	 ;(sentence p) (sentence q)
 	 (conde
-	  [(variable i) (== i o)]
+	  [(impl-freeo? i) (== i o)]
+	  ;[(variable i) (== i o)]
 	  [(== `(~ ,p) i) (sentence p) (impl-freeo p resp) (== `(~ ,resp) o)]
 	  [(== `(& ,p ,q) i) (sentence p) (sentence q) (impl-freeo p resp) (impl-freeo q resq) (== `(& ,resp ,resq) o)]
 	  [(== `(// ,p ,q) i) (sentence p) (sentence q) (impl-freeo p resp) (impl-freeo q resq) (== `(// ,resp ,resq) o)]
 	  [(== `(-> ,p ,q) i) (sentence p) (sentence q) (impl-freeo `(// (~ ,p) ,q) o)]
 	  )))
 
-(define (impl-freeo? s) (impl-freeo s s))
+(define (impl-freeo? s) 
+  (fresh (p q)
+	 (conde
+	  [(variable s)]
+	  [(== `(~ ,p) s) (impl-freeo? p)]
+	  [(== `(& ,p ,q) s) (impl-freeo? p) (impl-freeo? q)]
+	  [(== `(// ,p ,q) s) (impl-freeo? p) (impl-freeo? q)]
+	  )))
 
 (define (nnfo i o)
   (fresh (p q resp resq respq)
 	 (conde
-	  [(variable i) (== i o)]
-	  [(== `(~ (~ ,p)) i) (sentence p) (nnfo p o)]
-	  [(== `(& ,p ,q) i) (sentence p) (sentence q) 
+	  ;[(variable i) (== i o)]
+	  ;[(== `(~ ,p) i) (variable p) (== i o)]
+	  [(nnfo? i) (== i o)]
+	  [(== `(~ (~ ,p)) i) (impl-freeo? p) #;(sentence p) (nnfo p o)]
+	  [(== `(& ,p ,q) i) (impl-freeo? p) (impl-freeo? q) ;(sentence p) (sentence q) 
 	   (nnfo p resp) (nnfo q resq) (== `(& ,resp ,resq) o)]
-	  [(== `(// ,p ,q) i) (sentence p) (sentence q) 
+	  [(== `(// ,p ,q) i) (impl-freeo? p) (impl-freeo? q) ;(sentence p) (sentence q) 
 	   (nnfo p resp) (nnfo q resq) (== `(// ,resp ,resq) o)]
-	  [(== `(~ (& ,p ,q)) i) (sentence p) (sentence q) 
+	  [(== `(~ (& ,p ,q)) i) (impl-freeo? p) (impl-freeo? q) ;(sentence p) (sentence q) 
 	   (nnfo `(// (~ p) (~ )) o)]
-	  [(== `(~ (// ,p ,q)) i) (sentence p) (sentence q) 
+	  [(== `(~ (// ,p ,q)) i) (impl-freeo? p) (impl-freeo? q) ;(sentence p) (sentence q) 
 	   (nnfo `(& (~ p) (~ )) o)]
 	  )))
 
-(define (nnfo? s) (nnfo s s))
-	   
+(define (apply3o rel p q o) (rel p q o))
+
+(define (naive-nnfo? s) (nnfo s s))
+
+(define (nnfo? s)
+  (fresh (p q resp resq)
+	 (conde
+	  [(variable s)]
+	  [(== `(~ ,p) s) (variable p)]
+	  [(== `(& ,p ,q) s) (impl-freeo? p) (impl-freeo? q) ;(sentence p) (sentence q) 
+	   (nnfo? p) (nnfo? q)]
+	  [(== `(// ,p ,q) s) (impl-freeo? p) (impl-freeo? q) ;(sentence p) (sentence q) 
+	   (nnfo? p) (nnfo? q)]
+	  )))
+
 (define (cnfo i o)
+  (fresh (p q resp resq)
+	 (conde
+	  [(cnfo? i) (== i o)]
+	  [(== `(// ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) (== `(// ,resp ,resq) o)]
+	  [(== `(& ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) (distro resp resq o)]
+	  )))
+
+#;(define (distro s1 s2 o)
+  '())
+
+(define (old-cnfo i o)
   (fresh (p q r carp carq resp resq resr respq respr resi)
          (conde
           [(cnfo? i) (== i o)]
