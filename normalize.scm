@@ -67,6 +67,25 @@
 	  [(== `(-> ,p ,q) i) (sentence p) (sentence q) (impl-freeo `(// (~ ,p) ,q) o)]
 	  )))
 
+(define (impl-freeo? s) (impl-freeo s s))
+
+(define (nnfo i o)
+  (fresh (p q resp resq respq)
+	 (conde
+	  [(variable i) (== i o)]
+	  [(== `(~ (~ ,p)) i) (sentence p) (nnfo p o)]
+	  [(== `(& ,p ,q) i) (sentence p) (sentence q) 
+	   (nnfo p resp) (nnfo q resq) (== `(& ,resp ,resq) o)]
+	  [(== `(// ,p ,q) i) (sentence p) (sentence q) 
+	   (nnfo p resp) (nnfo q resq) (== `(// ,resp ,resq) o)]
+	  [(== `(~ (& ,p ,q)) i) (sentence p) (sentence q) 
+	   (nnfo `(// (~ p) (~ )) o)]
+	  [(== `(~ (// ,p ,q)) i) (sentence p) (sentence q) 
+	   (nnfo `(& (~ p) (~ )) o)]
+	  )))
+
+(define (nnfo? s) (nnfo s s))
+	   
 (define (cnfo i o)
   (fresh (p q r carp carq resp resq resr respq respr resi)
          (conde

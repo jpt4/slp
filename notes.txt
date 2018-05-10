@@ -3,4 +3,11 @@
 ;;jpt4
 ;;notes on slp development
 
+20180509Z
+(sentence p) (sentence q) outside of each clause in impl-freeo generates less interesting, occasionally repetitive results.
+naive (impl-freeo?) much slower (non-responsive) than (sentence) in (nnfo).
+
+
+20180508Z
 Instead of a rule for each associative/commutative/order difference, normalize to fixed order and scan again.
+
