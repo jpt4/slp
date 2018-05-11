@@ -147,6 +147,8 @@
   (fresh (resi resn)
 	 (impl-freeo i resi) (nnfo resi resn) (cnfo resn o)))
 
+;;TODO eliminate duplicate results in s->cnfo and relation chain.
+
 (define (old-cnfo i o)
   (fresh (p q r carp carq resp resq resr respq respr resi)
          (conde
