@@ -118,30 +118,34 @@
   (fresh (p q resp resq)
 	 (conde
 	  [(cnfo? i) (== i o)]
-	  [(== `(& ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) (== `(& ,resp ,resq) o)]
-	  [(== `(// ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) (distro resp resq o)]
+	  [(== `(& ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) ;(== 'one o)]
+	   (== `(& ,resp ,resq) o)]
+	  [(== `(// ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) ;(== `(p=,p q=,q) o)]
+	   (distro `(// ,resp ,resq) o)]
 	  )))
 
-(define (distro s1 s2 o)
-  (fresh (p1 p2 q1 q2 resl resr)
+(define (distro i o)
+  (cnfo? o)
+  (fresh (s1 s2 p1 p2 q1 q2 resl resr)
+	 (== `(// ,s1 ,s2) i)
 	 (conde
-	  [(== `(& ,p1 ,p2) s1) 
+	  [(cnfo? i) (== i o)]
+	  [(== `(& ,p1 ,p2) s1) (cnfo? s1) (cnfo? s2)
 	   ;(== 'one o)]
-	   (distro p1 s2 resl) (distro p2 s2 resr) (== `(& ,resl ,resr) o)]
-	  [(== `(& ,q1 ,q2) s2) 
-	   (=/= `(& ,p1 ,p2) s1)
-	   ;(== 'two o)]
-	   (distro s1 q1 resl) (distro s1 q2 resr) (== `(& ,resl ,resr) o)]
-	  [(=/= `(& ,p1 ,p2) s1) 
-	   (=/= `(& ,q1 ,q2) s2) 
+	   (distro `(// ,p1 ,s2) resl) (distro `(// ,p2 ,s2) resr) (== `(& ,resl ,resr) o)]
+	  [(== `(& ,q1 ,q2) s2) (=/= `(& ,p1 ,p2) s1)
+	   (cnfo? s1) (cnfo? s2)
+	   ;(== `(s1=,s1 s2=,s2 p1=,p1 p2=,p2 q1=,q1 q2=,q2) o)]
+	   (distro `(// ,s1 ,q1) resl) (distro `(// ,s1 ,q2) resr) (== `(& ,resl ,resr) o)]
+	  #;[(=/= `(& ,p1 ,p2) s1) (=/= `(& ,q1 ,q2) s2) 
+	   (cnfo? s1) (cnfo? s2)
 	   ;(== 'three o)]
 	   (== `(// ,s1 ,s2) o)]
 	  )))
 
-#;(define (s->cnfo i o)
-  (fresh (p q resp resq)
-	 (conde
-	  [])))
+(define (s->cnfo i o)
+  (fresh (resi resn)
+	 (impl-freeo i resi) (nnfo resi resn) (cnfo resn o)))
 
 (define (old-cnfo i o)
   (fresh (p q r carp carq resp resq resr respq respr resi)
@@ -179,7 +183,7 @@
 	  )))
 
 ;(~ (~ (// a b))) => (// a b)
-#|(run 1 (q) (cnfo '(~ (~ (// a (// a (& b c)))))))
+#|(run 1 (q) (s->cnfo '(~ (~ (// a (// a (& b c))))) q))
  => 
 (// a (// a (& b c)))
 (// a (& (// a b) (// a c)))
