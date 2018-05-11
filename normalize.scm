@@ -118,12 +118,30 @@
   (fresh (p q resp resq)
 	 (conde
 	  [(cnfo? i) (== i o)]
-	  [(== `(// ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) (== `(// ,resp ,resq) o)]
-	  [(== `(& ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) (distro resp resq o)]
+	  [(== `(& ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) (== `(& ,resp ,resq) o)]
+	  [(== `(// ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) (distro resp resq o)]
 	  )))
 
-#;(define (distro s1 s2 o)
-  '())
+(define (distro s1 s2 o)
+  (fresh (p1 p2 q1 q2 resl resr)
+	 (conde
+	  [(== `(& ,p1 ,p2) s1) 
+	   ;(== 'one o)]
+	   (distro p1 s2 resl) (distro p2 s2 resr) (== `(& ,resl ,resr) o)]
+	  [(== `(& ,q1 ,q2) s2) 
+	   (=/= `(& ,p1 ,p2) s1)
+	   ;(== 'two o)]
+	   (distro s1 q1 resl) (distro s1 q2 resr) (== `(& ,resl ,resr) o)]
+	  [(=/= `(& ,p1 ,p2) s1) 
+	   (=/= `(& ,q1 ,q2) s2) 
+	   ;(== 'three o)]
+	   (== `(// ,s1 ,s2) o)]
+	  )))
+
+#;(define (s->cnfo i o)
+  (fresh (p q resp resq)
+	 (conde
+	  [])))
 
 (define (old-cnfo i o)
   (fresh (p q r carp carq resp resq resr respq respr resi)
