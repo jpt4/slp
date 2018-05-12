@@ -86,29 +86,22 @@
 	  )))
 
 (define (nnfo i o)
-  (fresh (p q resp resq respq)
+  (fresh (p q p1 p2 resp resq respq)
 	 (conde
-	  ;[(variable i) (== i o)]
-	  ;[(== `(~ ,p) i) (variable p) (== i o)]
-	  [(nnfo? i) (== i o)]
-	  [(== `(~ (~ ,p)) i) (impl-freeo? p) #;(sentence p) (nnfo p o)]
+    [(nnfo? i) (== i o)]
+	  #;[(== `(~ ,p) i) (== `(,p1 ,p2) p) (=/= '~ p1)
+     (impl-freeo? p) (nnfo p resp)
+     (nnfo `(~ ,resp) o)]
+	  [(== `(~ (~ ,p)) i) (impl-freeo? p) (nnfo p o)]
 	  [(== `(& ,p ,q) i) (impl-freeo? p) (impl-freeo? q) 
-     ;(sentence p) (sentence q) 
 	   (nnfo p resp) (nnfo q resq) (== `(& ,resp ,resq) o)]
 	  [(== `(// ,p ,q) i) (impl-freeo? p) (impl-freeo? q) 
-     ;(sentence p) (sentence q) 
 	   (nnfo p resp) (nnfo q resq) (== `(// ,resp ,resq) o)]
 	  [(== `(~ (& ,p ,q)) i) (impl-freeo? p) (impl-freeo? q) 
-     ;(sentence p) (sentence q) 
-	   (nnfo `(// (~ p) (~ )) o)]
+	   (nnfo `(// (~ ,p) (~ ,q)) o)]
 	  [(== `(~ (// ,p ,q)) i) (impl-freeo? p) (impl-freeo? q) 
-     ;(sentence p) (sentence q) 
-	   (nnfo `(& (~ p) (~ )) o)]
+	   (nnfo `(& (~ ,p) (~ ,q)) o)]
 	  )))
-
-(define (apply3o rel p q o) (rel p q o))
-
-(define (naive-nnfo? s) (nnfo s s))
 
 (define (nnfo? s)
   (fresh (p q resp resq)
@@ -116,11 +109,9 @@
 	  [(variable s)]
 	  [(== `(~ ,p) s) (variable p)]
 	  [(== `(& ,p ,q) s) (impl-freeo? p) (impl-freeo? q) 
-     ;(sentence p) (sentence q) 
-	   (nnfo? p) (nnfo? q)]
+     (nnfo? p) (nnfo? q)]
 	  [(== `(// ,p ,q) s) (impl-freeo? p) (impl-freeo? q) 
-     ;(sentence p) (sentence q) 
-	   (nnfo? p) (nnfo? q)]
+     (nnfo? p) (nnfo? q)]
 	  )))
 
 (define (cnfo i o)
@@ -159,6 +150,78 @@
 (define (s->cnfo i o)
   (fresh (resi resn)
 	 (impl-freeo i resi) (nnfo resi resn) (cnfo resn o)))
+
+(define (thread-impl-freeo i o)
+  (fresh (p q resp resq)
+	 ;(sentence p) (sentence q)
+	 (conde
+	  [(impl-freeo? i) (thread-nnfo i o)]
+	  ;[(variable i) (== i o)]
+	  [(== `(~ ,p) i) (sentence p) (thread-impl-freeo p resp) 
+     (thread-nnfo `(~ ,resp) o)]
+	  [(== `(& ,p ,q) i) (sentence p) (sentence q) 
+     (thread-impl-freeo p resp) (thread-impl-freeo q resq) 
+     (thread-nnfo `(& ,resp ,resq) o)]
+	  [(== `(// ,p ,q) i) (sentence p) (sentence q) 
+     (thread-impl-freeo p resp) (thread-impl-freeo q resq) 
+     (thread-nnfo `(// ,resp ,resq) o)]
+	  [(== `(-> ,p ,q) i) (sentence p) (sentence q) 
+     (thread-impl-freeo `(// (~ ,p) ,q) o)]
+	  )))
+
+(define (thread-nnfo i o)
+  (fresh (p q resp resq respq)
+	 (conde
+	  ;[(variable i) (== i o)]
+	  ;[(== `(~ ,p) i) (variable p) (== i o)]
+	  [(nnfo? i) (cnfo i o)]
+	  [(== `(~ (~ ,p)) i) (impl-freeo? p) #;(sentence p) (thread-nnfo p o)]
+	  [(== `(& ,p ,q) i) (impl-freeo? p) (impl-freeo? q) 
+     ;(sentence p) (sentence q) 
+	   (thread-nnfo p resp) (thread-nnfo q resq) (cnfo `(& ,resp ,resq) o)]
+	  [(== `(// ,p ,q) i) (impl-freeo? p) (impl-freeo? q) 
+     ;(sentence p) (sentence q) 
+	   (thread-nnfo p resp) (thread-nnfo q resq) (cnfo `(// ,resp ,resq) o)]
+	  [(== `(~ (& ,p ,q)) i) (impl-freeo? p) (impl-freeo? q) 
+     ;(sentence p) (sentence q) 
+	   (thread-nnfo `(// (~ ,p) (~ ,q)) o)]
+	  [(== `(~ (// ,p ,q)) i) (impl-freeo? p) (impl-freeo? q) 
+     ;(sentence p) (sentence q) 
+	   (thread-nnfo `(& (~ ,p) (~ ,q)) o)]
+	  )))
+
+(define (diag-nnfo i o)
+  (fresh (p q p1 p2 resp resq respq)
+	 (conde
+    [(nnfo? i) (== i o)]
+	  #;[(== `(~ ,p) i) (== `(,p1 ,p2) p) (=/= '~ p1) 
+     (impl-freeo? p) (diag-nnfo p resp) 
+     ;(diag-nnfo`(~ ,resp) o)
+     (== 'one o)]
+	  [(== `(~ (~ ,p)) i) (impl-freeo? p) 
+     (diag-nnfo p o)]
+     ;(== 'two o)]
+	  [(== `(& ,p ,q) i) (impl-freeo? p) (impl-freeo? q) 
+     (diag-nnfo p resp) (diag-nnfo q resq) 
+     (== `(& ,resp ,resq) o)]
+     ;(== 'three o)]
+	  [(== `(// ,p ,q) i) (impl-freeo? p) (impl-freeo? q) 
+	   (diag-nnfo p resp) (diag-nnfo q resq) 
+     (== `(// ,resp ,resq) o)]
+    ;(== 'four o)]
+	  [(== `(~ (& ,p ,q)) i) (impl-freeo? p) (impl-freeo? q) 
+	   (diag-nnfo`(// (~ ,p) (~ ,q)) o)]
+    ;(== 'five o)]
+	  [(== `(~ (// ,p ,q)) i) (impl-freeo? p) (impl-freeo? q) 
+	   (diag-nnfo`(& (~ ,p) (~ ,q)) o)]
+     ;(== 'six o)]
+	  )))
+
+#;(define (thread-s->cnfo i o)
+  (fresh (resi)
+         (conde
+          [(se)])))
+  
 
 ;;TODO eliminate duplicate results in s->cnfo and relation chain.
 
