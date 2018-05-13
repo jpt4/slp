@@ -63,10 +63,8 @@
 
 (define (impl-freeo i o)
   (fresh (p q resp resq)
-	 ;(sentence p) (sentence q)
 	 (conde
 	  [(impl-freeo? i) (== i o)]
-	  ;[(variable i) (== i o)]
 	  [(== `(~ ,p) i) (sentence p) (impl-freeo p resp) (== `(~ ,resp) o)]
 	  [(== `(& ,p ,q) i) (sentence p) (sentence q) 
      (impl-freeo p resp) (impl-freeo q resq) (== `(& ,resp ,resq) o)]
@@ -89,10 +87,7 @@
   (fresh (p q p1 p2 resp resq respq)
 	 (conde
     [(nnfo? i) (== i o)]
-	  #;[(== `(~ ,p) i) (== `(,p1 ,p2) p) (=/= '~ p1)
-     (impl-freeo? p) (nnfo p resp)
-     (nnfo `(~ ,resp) o)]
-	  [(== `(~ (~ ,p)) i) (impl-freeo? p) (nnfo p o)]
+    [(== `(~ (~ ,p)) i) (impl-freeo? p) (nnfo p o)]
 	  [(== `(& ,p ,q) i) (impl-freeo? p) (impl-freeo? q) 
 	   (nnfo p resp) (nnfo q resq) (== `(& ,resp ,resq) o)]
 	  [(== `(// ,p ,q) i) (impl-freeo? p) (impl-freeo? q) 
@@ -119,11 +114,9 @@
 	 (conde
 	  [(cnfo? i) (== i o)]
 	  [(== `(& ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) 
-     ;(== 'one o)]
 	   (== `(& ,resp ,resq) o)]
 	  [(== `(// ,p ,q) i) (nnfo? i) (cnfo p resp) (cnfo q resq) 
-     ;(== `(p=,p q=,q) o)]
-	   (distro `(// ,resp ,resq) o)]
+     (distro `(// ,resp ,resq) o)]
 	  )))
 
 (define (distro i o)
@@ -133,13 +126,11 @@
 	 (conde
 	  [(cnfo? i) (== i o)]
 	  [(== `(& ,p1 ,p2) s1) (cnfo? s1) (cnfo? s2)
-	   ;(== 'one o)]
-	   (distro `(// ,p1 ,s2) resl) (distro `(// ,p2 ,s2) resr) 
+     (distro `(// ,p1 ,s2) resl) (distro `(// ,p2 ,s2) resr) 
      (== `(& ,resl ,resr) o)]
 	  [(== `(& ,q1 ,q2) s2) (=/= `(& ,p1 ,p2) s1)
 	   (cnfo? s1) (cnfo? s2)
-	   ;(== `(s1=,s1 s2=,s2 p1=,p1 p2=,p2 q1=,q1 q2=,q2) o)]
-	   (distro `(// ,s1 ,q1) resl) (distro `(// ,s1 ,q2) resr) 
+     (distro `(// ,s1 ,q1) resl) (distro `(// ,s1 ,q2) resr) 
      (== `(& ,resl ,resr) o)]
 	  #;[(=/= `(& ,p1 ,p2) s1) (=/= `(& ,q1 ,q2) s2) 
 	   (cnfo? s1) (cnfo? s2)
