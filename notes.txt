@@ -3,6 +3,9 @@
 ;;jpt4
 ;;notes on slp development
 
+20180514Z
+Pass cnf'd terms to rule clauses for faster matching?
+
 20180510Z
 Grammar based (impl-freeo?) much faster.
 

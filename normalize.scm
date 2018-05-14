@@ -138,6 +138,7 @@
 	   (== `(// ,s1 ,s2) o)]
 	  )))
 
+
 (define (s->cnfo i o)
   (fresh (resi resn)
 	 (impl-freeo i resi) (nnfo resi resn) (cnfo resn o)))
