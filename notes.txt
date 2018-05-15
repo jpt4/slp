@@ -3,6 +3,10 @@
 ;;jpt4
 ;;notes on slp development
 
+20180515Z
+Paulson 1990 Designing a Theorem Prover - reconciling normal form and
+human-esque rule selection section
+
 20180514Z
 Pass cnf'd terms to rule clauses for faster matching?
 
