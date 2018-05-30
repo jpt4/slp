@@ -139,6 +139,12 @@
 	  )))
 
 
+(define (cnfoable i o)
+  (conde
+   [(s->cnfo i o)]
+   [(s->cnfo o i)]))
+
+
 (define (s->cnfo i o)
   (fresh (resi resn)
 	 (impl-freeo i resi) (nnfo resi resn) (cnfo resn o)))
