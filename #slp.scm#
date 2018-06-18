@@ -18,9 +18,9 @@
 (define (compound-statement c)
   (fresh (sl sr)
          (conde
-          [(mk-not sl c) (any-statement sl)]
-          [(mk-and sl sr c) (any-statement sl) (any-statement sr)]
-          [(mk-or sl sr c) (any-statement sl) (any-statement sr)]
+          [(noto sl c) (any-statement sl)]
+          [(ando sl sr c) (any-statement sl) (any-statement sr)]
+          [(oro sl sr c) (any-statement sl) (any-statement sr)]
 )))
 
 (define (simple-statement ss)
@@ -29,9 +29,9 @@
   )
 
 ;;compound statements
-(define (mk-not s c) (== `(~ ,s) c))
-(define (mk-and sl sr c) (== `(& ,sl ,sr) c))
-(define (mk-or sl sr c) (== `(// ,sl ,sr) c))
+(define (noto s c) (== `(~ ,s) c))
+(define (ando sl sr c) (== `(& ,sl ,sr) c))
+(define (oro sl sr c) (== `(// ,sl ,sr) c))
 
 ;;Characteristic, symmetric, and dual equivalence rule generation
 ;given a characteristic rule, produce a characteristic rule procedure
@@ -161,14 +161,14 @@
 
 ;;Eight Assumed Equivalence Rules, Symmetries, Duals, and Symmetric Duals
 (define base-rule-defs
-  '((dneg (~ (~ x)) x)
-    (idem (& x x) x)
-    (comm (& x y) (& y x))
-    (assoc (& x (& y z)) (& (& x y) z))
-    (absorp (& x (// x y)) x)
-    (distr (& x (// y z)) (// (& x y) (& x z)))
-    (dem (~ (& x y)) (// (~ x) (~ y)))
-    (dichot (// x (~ x)) (// y (~ y)))))
+  '((dneg (~ (~ x)) x)                          ;Double Negation
+    (idem (& x x) x)                            ;Idempotency
+    (comm (& x y) (& y x))                      ;Commutativity
+    (assoc (& x (& y z)) (& (& x y) z))         ;Associativity
+    (absorp (& x (// x y)) x)                   ;Absorption
+    (distr (& x (// y z)) (// (& x y) (& x z))) ;Distributivity
+    (dem (~ (& x y)) (// (~ x) (~ y)))          ;DeMorgan's Rule
+    (dichot (// x (~ x)) (// y (~ y)))))        ;Dichotomy
 
 ;;example rule: '(name lhs rhs), '(dem (~ (& a b)) (// (~ a) (~ b)))
 (define build-rule-corpus 
@@ -196,6 +196,8 @@
 (define base-rules
   (build-rule-corpus base-rule-defs))
 
+(define ch1-rules (build-rule-corpus base-rule-defs '()))
+
 ;;build-prover
 ;;generate miniKanren sl prover with a given corpus of rules
 (define (build-named-prover prover-name rule-name-ls)
@@ -216,16 +218,17 @@
                new-exp res-sub-t sub-t sub-o
                sl sr res-sub-t-l res-sub-t-r sub-t-l sub-t-r sub-o-l sub-o-r)
             ,(append (list 'conde)
+                     ;rule-clauses
                      '([(== i o) (== '(end) t)])
                      '([(simple-statement i) (== `((,i simp)) t) (== i o)])
                      ;((sub-trace (((& a a) not-comp) (a idem))))
-                     `([(mk-not x i) 
+                     `([(noto x i) 
                        (== `((,x not-comp) . ,res-sub-t) sub-t) 
                        (,pn x res-sub-t sub-o)
                        (== `((sub-trace ,sub-t) . ,y) t)
                        (== `(~ ,sub-o) new-exp)
                        (,pn new-exp y o)])
-                     `([(mk-and sl sr i)
+                     `([(ando sl sr i)
                         (== `((,sl and-comp-l) . ,res-sub-t-l) sub-t-l) 
                         (== `((,sr and-comp-r) . ,res-sub-t-r) sub-t-r)
                         (,pn sl res-sub-t-l sub-o-l)
@@ -234,7 +237,7 @@
                               (sub-trace ,sub-t-r) . ,y) t)
                         (== `(& ,sub-o-l ,sub-o-r) new-exp)
                         (,pn new-exp y o)])
-                     `([(mk-or sl sr i) 
+                     `([(oro sl sr i) 
                         (== `((,sl or-comp-l) . ,res-sub-t-l) sub-t-l) 
                         (== `((,sr or-comp-r) . ,res-sub-t-r) sub-t-r)        
                         (,pn sl res-sub-t-l sub-o-l)
@@ -243,12 +246,14 @@
                               (sub-trace ,sub-t-r) . ,y) t)
                         (== `(// ,sub-o-l ,sub-o-r) new-exp)
                         (,pn new-exp y o)])
-                     rule-clauses)))])
+                     rule-clauses
+                     )))])
     (define-top-level-value (rule-source-name pn) prover-source)
     (define-top-level-value pn (eval prover-source))))
 
 ;;base-provero
 (build-named-prover 'base-provero base-rules)
+(build-named-prover 'ch1-provero ch1-rules)
 
 ;;Syntactically mark statements as equivalent.
 (define (mk-eqv i o)
@@ -316,12 +321,12 @@
           [(sym-dem i x) (== `((,x sym-dem) . ,y) t) (eqvo x y o)]          
           [(sym-dichot i x) (== `((,x sym-dichot) . ,y) t) (eqvo x y o)]
           ;Substitution Principle - compound decomposition
-          [(mk-not x i) (== `((,x not-comp) . ,res-sub-t) sub-t) 
+          [(noto x i) (== `((,x not-comp) . ,res-sub-t) sub-t) 
            (eqvo x res-sub-t sub-o)
            (== `((sub-trace ,sub-t) . ,y) t)
            (== `(~ ,sub-o) new-exp)
            (eqvo new-exp y o)]
-          [(mk-and sl sr i) 
+          [(ando sl sr i) 
            (== `((,sl and-comp-l) . ,res-sub-t-l) sub-t-l) 
            (== `((,sr and-comp-r) . ,res-sub-t-r) sub-t-r)            
            (eqvo sl res-sub-t-l sub-o-l)
@@ -329,7 +334,7 @@
            (== `((sub-trace ,sub-t-l) (sub-trace ,sub-t-r) . ,y) t)
            (== `(& ,sub-o-l ,sub-o-r) new-exp)
            (eqvo new-exp y o)]
-          [(mk-or sl sr i) 
+          [(oro sl sr i) 
            (== `((,sl or-comp-l) . ,res-sub-t-l) sub-t-l) 
            (== `((,sr or-comp-r) . ,res-sub-t-r) sub-t-r)            
            (eqvo sl res-sub-t-l sub-o-l)
